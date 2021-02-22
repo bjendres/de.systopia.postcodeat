@@ -43,7 +43,7 @@ class CRM_Postcodeat_ImportStatistikAustria {
 
     //read csv file line for line
     $sql = "INSERT INTO `civicrm_statistikaustria_import` "
-      . " (`gemnr`, `gemnam38`, `okz`, `ortnam`, `skz`, `stroffi`, `plznr`, `gemnr2`)"
+      . " (`gemnr`, `gemnam38`, `okz`, `ortnam`, `skz`, `stroffi`, `plznr`, `gemnr2`, `zustort`)"
       . " VALUES ";
 
     // Results are XML so turn this into a PHP Array
@@ -53,7 +53,7 @@ class CRM_Postcodeat_ImportStatistikAustria {
 
     foreach($xml->daten->children() as $key => $element) {
       $elements = (array) $element->element;
-      if (count($elements) == 8) {
+      if (count($elements) == 9) {
         // Looks like valid data
         //escape data for database
         foreach ($elements as $n => $val) {
@@ -64,7 +64,7 @@ class CRM_Postcodeat_ImportStatistikAustria {
         $elements[3] = CRM_Postcodeat_ImportStatistikAustria::parseOrtnam($elements[3]);
 
         $values = " ('" . $elements[0] . "', '" . $elements[1] . "', '" . $elements[2] . "', '" . $elements[3] . "', '" . $elements[4] .
-          "', '" . $elements[5] . "', '" . $elements[6] . "', '" . $elements[7] . "')";
+          "', '" . $elements[5] . "', '" . $elements[6] . "', '" . $elements[7] . "', '" . $elements[8] . "')";
         CRM_Core_DAO::executeQuery($sql . $values);
       }
     }
@@ -94,10 +94,15 @@ class CRM_Postcodeat_ImportStatistikAustria {
     return $newOrtnam;
   }
 
-  public function copy() {
+  public function copy($discardEmpty = TRUE) {
+    $check_sql = "SELECT COUNT(*) FROM `civicrm_statistikaustria_import`";
+    if ($discardEmpty && CRM_Core_DAO::singleValueQuery($check_sql) == 0) {
+      return FALSE;
+    }
     CRM_Core_DAO::executeQuery("TRUNCATE `civicrm_postcodeat`;");
     CRM_Core_DAO::executeQuery("INSERT INTO `civicrm_postcodeat` SELECT * FROM `civicrm_statistikaustria_import`");
     CRM_Core_DAO::executeQuery("TRUNCATE `civicrm_statistikaustria_import`;");
+    return TRUE;
   }
 
   /**
